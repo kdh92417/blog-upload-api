@@ -1,46 +1,36 @@
-from rest_framework import status
+from rest_framework import status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from posting.models import Posting
 from posting.serializers import PostingSerializer
+from posting.utils import check_password
 
 
-# 게시글 생성 및 게시글 리스트 조회
-class PostingListCreateAPIView(APIView):
-    def get(self, request):
+class PostingViewSet(viewsets.ModelViewSet):
+    """
+    블로그 생성, 수정, 삭제, 리스트 조회 API
+    """
+    queryset = Posting.objects.all().order_by("-created_at")
+    serializer_class = PostingSerializer
+
+    def destroy(self, request, *args, **kwargs):
         """
-        게식시글 리스트 조회
-        :param:
-        :return: 게시글 리스트
+        삭제하기 전 비밀번호 체크
+        :param request: password
+        :return:
         """
-        queryset = Posting.objects.all()
-        serializer = PostingSerializer(queryset, many=True)
+        try:
+            password = request.data.get("password", None)
+            posting_instance = Posting.objects.get(id=self.kwargs.get("pk"))
 
-        return Response(data=serializer.data, status=status.HTTP_200_OK)
+            if not password:
+                raise ValidationError("password 값이 잘못되었습니다.")
 
-    def post(self, request):
-        """
-        게시글 생성
-        :param: title: str
-        :param: content: str
-        :param: password: str
-        :return: 게시글 리스트
-        """
-        serializer = PostingSerializer(data=request.data)
-        print("serializer: ", serializer)
-        # print("data: ", serializer.data)
-        serializer.is_valid(raise_exception=True)
-        # password didn't hashing
-        serializer.save()
-        return Response(serializer.data)
+            if not check_password(password, posting_instance):
+                raise ValidationError("비밀번호가 맞지 않습니다.")
 
+            return super(PostingViewSet, self).destroy(request, *args, **kwargs)
 
-class PostingDeleteUpdateAPIView(APIView):
-    def delete(self, request, id):
-        print("request : ", request.data, id)
-        return Response({}, status=status.HTTP_200_OK)
-
-    def post(self, request):
-        print("request : ", request.data)
-        return Response({}, status=status.HTTP_200_OK)
+        except Posting.DoesNotExist as e:
+            return Response(data=str(e), status=status.HTTP_404_NOT_FOUND)
