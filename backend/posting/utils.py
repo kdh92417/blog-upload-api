@@ -1,5 +1,5 @@
 import bcrypt
-
+from rest_framework.pagination import PageNumberPagination
 from posting.models import Posting
 
 
@@ -24,3 +24,7 @@ def check_password(password: str, instance: Posting):
     encoded_password = password.encode("utf-8")
     encoded_db_password = instance.password.encode("utf-8")
     return bcrypt.checkpw(encoded_password, encoded_db_password)
+
+
+class PostPageNumberPagination(PageNumberPagination):
+    page_size = 20
