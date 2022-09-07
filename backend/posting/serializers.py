@@ -12,8 +12,9 @@ class PostingSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Posting
-        exclude = ["id"]
+        fields = "__all__"
         extra_kwargs = {
+            "id": {"read_only": True},
             "password": {"write_only": True},
             "created_at": {"read_only": True},
             "updated_at": {"read_only": True}
