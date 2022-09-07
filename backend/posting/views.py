@@ -4,7 +4,7 @@ from rest_framework.response import Response
 
 from posting.models import Posting
 from posting.serializers import PostingSerializer
-from posting.utils import check_password
+from posting.utils import check_password, PostPageNumberPagination
 
 
 class PostingViewSet(viewsets.ModelViewSet):
@@ -13,6 +13,7 @@ class PostingViewSet(viewsets.ModelViewSet):
     """
     queryset = Posting.objects.all().order_by("-created_at")
     serializer_class = PostingSerializer
+    pagination_class = PostPageNumberPagination
 
     def destroy(self, request, *args, **kwargs):
         """
