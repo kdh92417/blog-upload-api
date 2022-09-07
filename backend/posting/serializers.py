@@ -1,19 +1,8 @@
-import bcrypt
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
 from posting.models import Posting
-
-
-def hash_password(password: str):
-    """
-    bcrypt를 이용한 비밀번호 암호화
-    :param password: string
-    :return: 암호호된 비밀번호
-    """
-    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-    decode_password = hashed_password.decode("utf-8")
-    return decode_password
+from posting.utils import hash_password, check_password
 
 
 class PostingSerializer(serializers.ModelSerializer):
@@ -24,7 +13,11 @@ class PostingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Posting
         exclude = ["id"]
-        extra_kwargs = {"password": {"write_only": True}}
+        extra_kwargs = {
+            "password": {"write_only": True},
+            "created_at": {"read_only": True},
+            "updated_at": {"read_only": True}
+        }
 
     def validate_password(self, password: str):
         """
@@ -86,9 +79,9 @@ class PostingSerializer(serializers.ModelSerializer):
         :param validated_data:
         :return: instance
         """
-        instance.password = hash_password(validated_data.pop("password"))
-        # instance.title = validated_data.get('title', instance.title)
-        # instance.content = validated_data.get('content', instance.content)
-        # instance.password = hash_password(validated_data.get('password', instance.password))
-        # instance.save()
+        password = validated_data.pop("password")
+        if not check_password(password, instance):
+            raise ValidationError("비밀번호가 맞지 않습니다.")
+
+        instance.password = hash_password(password)
         return super().update(instance, validated_data)
